@@ -3,6 +3,7 @@ from collections import deque
 import cv2
 import numpy as np
 import pytesseract
+import re
 import time
 from PIL import Image
 
@@ -13,54 +14,60 @@ blueUpper = np.array([157, 259, 232])
 # Define a 5x5 kernel for erosion and dilation
 kernel = np.ones((5, 5), np.uint8)
 
-# Initialize deques to store drawed symbols
 bpoints = [deque(maxlen=512)]
-
-# Initialize an index variable for each of the colors
 bindex = 0
 
-# Just a handy array and an index variable to get the color-of-interest on the go
 paintColor = (0, 0, 0)
-colorIndex = 0
 
-# Create a blank white image
 paintWindow = np.zeros((471, 636, 3)) + 255
 
-# Clear button
 clearButtonRectangleArgs = ((40, 1), (140, 65), (122, 122, 122), -1)
-clearButtonArgs = ("CLEAR", (63, 38), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 2, cv2.LINE_AA)
+clearButtonArgs = ("CLEAR", (63, 38), cv2.FONT_HERSHEY_DUPLEX, 0.5, (0, 0, 0), 2, cv2.LINE_AA)
 
-# Create a window to display the above image (later)
 cv2.namedWindow('Output', cv2.WINDOW_AUTOSIZE)
 
 # Load the video
 camera = cv2.VideoCapture(0)
 
 start_time = time.time()
+letters = ''
+regex = re.compile('[A-Z]')
 
 
-def recognize_text(painting):
+def recognize_text(painting, bpoints, letters):
     imgArray = paintWindow.astype('uint8')
     img = Image.fromarray(imgArray)
     config = ("-l eng --oem 1 --psm 7")
     text = pytesseract.image_to_string(img, config=config)
-    print(text)
+    if len(text) == 1 and regex.match(text) is not None:
+        letters += text
+        print(letters)
+    else:
+        print('Letter not recognized')
+
+    return clear_points(), letters
 
 
-# Keep looping
+def clear_points():
+    bpoints = [deque(maxlen=512)]
+    paintWindow[:, :, :] = 255
+    return bpoints
+
+
 while True:
     # Grab the current paintWindow
     (grabbed, frame) = camera.read()
     frame = cv2.flip(frame, 1)
     hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
 
-    # Check to see if we have reached the end of the video (useful when input is a video file not a live video stream)
     if not grabbed:
         break
 
     # Add the same paint interface to the camera feed captured through the webcam (for ease of usage)
     frame = cv2.rectangle(frame, *clearButtonRectangleArgs)
     cv2.putText(frame, *clearButtonArgs)
+
+    cv2.putText(frame, letters, (183, 38), cv2.FONT_HERSHEY_DUPLEX, 0.5, (0, 0, 0), 2, cv2.LINE_AA)
 
     # Determine which pixels fall within the blue boundaries and then blur the binary image
     blueMask = cv2.inRange(hsv, blueLower, blueUpper)
@@ -77,26 +84,21 @@ while True:
         cnt = sorted(cnts, key=cv2.contourArea, reverse=True)[0]
 
         if cv2.contourArea(cnt) >= 2000:
-
-            # Get the radius of the enclosing circle around the found contour
+            # Get the radius of the enclosing circle and draw it
             ((x, y), radius) = cv2.minEnclosingCircle(cnt)
-            # Draw the circle around the contour
             cv2.circle(frame, (int(x), int(y)), int(radius), (0, 255, 255), 2)
+
             # Get the moments to calculate the center of the circle
             M = cv2.moments(cnt)
             center = (int(M['m10'] / M['m00']), int(M['m01'] / M['m00']))
 
             if center[1] <= 65:
                 if 40 <= center[0] <= 140:  # Clear All
-                    # Empty all the point holders
-                    bpoints = [deque(maxlen=512)]
-                    # Reset the indices
-                    bindex = 0
-                    # Make the frame all white again
-                    paintWindow[67:, :, :] = 255
+                    bpoints = clear_points()
             else:
-                if colorIndex == 0:
-                    bpoints[bindex].appendleft(center)
+                bpoints[bindex].appendleft(center)
+
+            start_time = time.time()
 
     # Draw lines
     points = [bpoints]
@@ -110,10 +112,10 @@ while True:
 
     # Show the frame and the paintWindow image
     cv2.imshow("Tracking", frame)
-    cv2.imshow("Paint", paintWindow)
+    cv2.imshow("Output", paintWindow)
 
-    if time.time() - start_time > 10:
-        recognize_text(paintWindow)
+    if time.time() - start_time > 2:
+        bpoints, letters = recognize_text(paintWindow, bpoints, letters)
         start_time = time.time()
 
     # If the 'q' key is pressed, stop the loop
