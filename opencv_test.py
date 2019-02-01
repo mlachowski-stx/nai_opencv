@@ -3,8 +3,8 @@ import cv2
 from collections import deque
 
 # Define the upper and lower boundaries for a color to be considered "Blue"
-blueLower = np.array([100, 60, 60])
-blueUpper = np.array([140, 255, 255])
+blueLower = np.array([86, 66, 74])
+blueUpper = np.array([146, 126, 214])
 
 # Define a 5x5 kernel for erosion and dilation
 kernel = np.ones((5, 5), np.uint8)
@@ -61,11 +61,11 @@ while True:
         break
 
         # Add the same paint interface to the camera feed captured through the webcam (for ease of usage)
-    frame = cv2.rectangle(frame, (40, 1), (140, 65), (122, 122, 122), -1)
-    frame = cv2.rectangle(frame, (160, 1), (255, 65), colors[0], -1)
-    frame = cv2.rectangle(frame, (275, 1), (370, 65), colors[1], -1)
-    frame = cv2.rectangle(frame, (390, 1), (485, 65), colors[2], -1)
-    frame = cv2.rectangle(frame, (505, 1), (600, 65), colors[3], -1)
+    frame = cv2.rectangle(frame, (40, 10), (140, 65), (122, 122, 122), -1)
+    frame = cv2.rectangle(frame, (160, 10), (255, 65), colors[0], -1)
+    frame = cv2.rectangle(frame, (275, 10), (370, 65), colors[1], -1)
+    frame = cv2.rectangle(frame, (390, 10), (485, 65), colors[2], -1)
+    frame = cv2.rectangle(frame, (505, 10), (600, 65), colors[3], -1)
     cv2.putText(frame, "CLEAR ALL", (49, 33), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2, cv2.LINE_AA)
     cv2.putText(frame, "BLUE", (185, 33), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2, cv2.LINE_AA)
     cv2.putText(frame, "GREEN", (298, 33), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2, cv2.LINE_AA)
@@ -79,8 +79,7 @@ while True:
     blueMask = cv2.dilate(blueMask, kernel, iterations=1)
 
     # Find contours in the image
-    (_, cnts, _) = cv2.findContours(blueMask.copy(), cv2.RETR_EXTERNAL,
-                                    cv2.CHAIN_APPROX_SIMPLE)
+    _, cnts, _ = cv2.findContours(blueMask.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
     # Check to see if any contours (blue stuff) were found
     if len(cnts) > 0:
@@ -135,8 +134,8 @@ while True:
             for k in range(1, len(points[i][j])):
                 if points[i][j][k - 1] is None or points[i][j][k] is None:
                     continue
-                cv2.line(frame, points[i][j][k - 1], points[i][j][k], colors[i], 2)
-                cv2.line(paintWindow, points[i][j][k - 1], points[i][j][k], colors[i], 2)
+                cv2.line(frame, points[i][j][k - 1], points[i][j][k], colors[i], 5)
+                cv2.line(paintWindow, points[i][j][k - 1], points[i][j][k], colors[i], 5)
 
     # Show the frame and the paintWindow image
     cv2.imshow("Tracking", frame)

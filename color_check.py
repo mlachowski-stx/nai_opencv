@@ -3,7 +3,7 @@ import numpy as np
 
 image_hsv = None   # global ;(
 pixel = (20, 60, 80)  # some stupid default
-
+RANGE = 30
 
 # mouse callback function
 def pick_color(event,x,y,flags,param):
@@ -11,8 +11,8 @@ def pick_color(event,x,y,flags,param):
         pixel = image_hsv[y,x]
 
         # you might want to adjust the ranges(+-10, etc):
-        upper =  np.array([pixel[0] + 10, pixel[1] + 10, pixel[2] + 40])
-        lower =  np.array([pixel[0] - 10, pixel[1] - 10, pixel[2] - 40])
+        upper =  np.array([pixel[0] + RANGE, pixel[1] + RANGE, pixel[2] + 70])
+        lower =  np.array([pixel[0] - RANGE, pixel[1] - RANGE, pixel[2] - 70])
         print(pixel, lower, upper)
 
         image_mask = cv2.inRange(image_hsv,lower,upper)
