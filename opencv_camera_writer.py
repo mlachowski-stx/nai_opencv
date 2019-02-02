@@ -8,8 +8,8 @@ import time
 from PIL import Image
 
 # Define the upper and lower boundaries for a color to be considered "Blue"
-blueLower = np.array([57, 159, 32])
-blueUpper = np.array([157, 259, 232])
+blueLower = np.array([52, 142, -7])
+blueUpper = np.array([152, 242, 193])
 
 # Define a 5x5 kernel for erosion and dilation
 kernel = np.ones((5, 5), np.uint8)
@@ -18,26 +18,26 @@ bpoints = [deque(maxlen=512)]
 bindex = 0
 
 paintColor = (0, 0, 0)
+textColor = (255, 255, 255)
 
 paintWindow = np.zeros((471, 636, 3)) + 255
 
 clearButtonRectangleArgs = ((40, 1), (140, 65), (122, 122, 122), -1)
-clearButtonArgs = ("CLEAR", (63, 38), cv2.FONT_HERSHEY_DUPLEX, 0.5, (0, 0, 0), 2, cv2.LINE_AA)
+clearButtonArgs = ("CLEAR", (63, 38), cv2.FONT_HERSHEY_DUPLEX, 0.5, textColor, 2, cv2.LINE_AA)
 
 cv2.namedWindow('Output', cv2.WINDOW_AUTOSIZE)
 
-# Load the video
 camera = cv2.VideoCapture(0)
 
 start_time = time.time()
 letters = ''
-regex = re.compile('[A-Z]')
+regex = re.compile('[A-Z0-9]')
+config = ("-l eng --oem 1 --psm 7")
 
 
 def recognize_text(painting, bpoints, letters):
     imgArray = paintWindow.astype('uint8')
     img = Image.fromarray(imgArray)
-    config = ("-l eng --oem 1 --psm 7")
     text = pytesseract.image_to_string(img, config=config)
     if len(text) == 1 and regex.match(text) is not None:
         letters += text
@@ -67,7 +67,7 @@ while True:
     frame = cv2.rectangle(frame, *clearButtonRectangleArgs)
     cv2.putText(frame, *clearButtonArgs)
 
-    cv2.putText(frame, letters, (183, 38), cv2.FONT_HERSHEY_DUPLEX, 0.5, (0, 0, 0), 2, cv2.LINE_AA)
+    cv2.putText(frame, letters, (183, 38), cv2.FONT_HERSHEY_DUPLEX, 0.5, textColor, 2, cv2.LINE_AA)
 
     # Determine which pixels fall within the blue boundaries and then blur the binary image
     blueMask = cv2.inRange(hsv, blueLower, blueUpper)
